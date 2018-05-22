@@ -1,19 +1,24 @@
 package cc.dmji.api.web.controller;
 
+import cc.dmji.api.annotation.ValidUserSelf;
 import cc.dmji.api.common.Result;
 import cc.dmji.api.common.ResultCode;
 import cc.dmji.api.constants.RedisKey;
+import cc.dmji.api.constants.SecurityConstants;
 import cc.dmji.api.entity.User;
 import cc.dmji.api.enums.Role;
 import cc.dmji.api.enums.UserStatus;
+import cc.dmji.api.service.RedisTokenService;
 import cc.dmji.api.service.UserService;
 import cc.dmji.api.utils.DmjiUtils;
+import org.apache.catalina.servlet4preview.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +37,9 @@ public class AuthController extends BaseController {
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
 
+    @Autowired
+    private RedisTokenService redisTokenService;
+
     @PostMapping("/register")
     public ResponseEntity<Result> createAuthenticationToken(
             @RequestBody User user) {
@@ -41,23 +49,24 @@ public class AuthController extends BaseController {
         String email = user.getEmail();
 
         if (!DmjiUtils.validUsername(nick)) {
-            return new ResponseEntity<>(
-                    getErrorResult(ResultCode.PARAM_IS_INVALID, "账号格式不符合要求")
-                    , HttpStatus.BAD_REQUEST);
+            return getResponseEntity(HttpStatus.OK, getErrorResult(ResultCode.PARAM_IS_INVALID, "账号格式不符合要求"));
+        } else {
+            User dbUser = userService.getUserByNick(nick);
+            if (dbUser == null) {
+                return getResponseEntity(HttpStatus.OK, getErrorResult(ResultCode.PARAM_IS_INVALID, "该用户已存在"));
+            }
         }
-
         if (!DmjiUtils.validPassword(password)) {
-            return new ResponseEntity<>(
-                    getErrorResult(ResultCode.PARAM_IS_INVALID, "密码格式不符合要求"),
-                    HttpStatus.BAD_REQUEST
-            );
+            return getResponseEntity(HttpStatus.OK, getErrorResult(ResultCode.PARAM_IS_INVALID, "密码格式不符合要求"));
         }
 
         if (!DmjiUtils.validEmail(email)) {
-            return new ResponseEntity<>(
-                    getErrorResult(ResultCode.PARAM_IS_INVALID, "邮件格式不正确"),
-                    HttpStatus.BAD_REQUEST
-            );
+            return getResponseEntity(HttpStatus.OK, getErrorResult(ResultCode.PARAM_IS_INVALID, "邮箱格式不正确"));
+        } else {
+            User dbUser = userService.getUserByEmail(email);
+            if (dbUser == null) {
+                return getResponseEntity(HttpStatus.OK, getErrorResult(ResultCode.PARAM_IS_INVALID, "该邮箱地址已被使用"));
+            }
         }
 
         // 验证通过
@@ -86,8 +95,16 @@ public class AuthController extends BaseController {
     }
 
     @GetMapping("/logout")
-    public ResponseEntity<Result> logout(@RequestParam("token") String token) {
-        return getResponseEntity(HttpStatus.OK, getSuccessResult());
+    public ResponseEntity<Result> logout(HttpServletRequest request) {
+        String header = request.getHeader(SecurityConstants.TOKEN_HEADER_AUTHORIZATION);
+        String token = header.replace(SecurityConstants.TOKEN_PREFIX, "");
+        if (redisTokenService.hasToken(token)){
+            Long tokenIndex = redisTokenService.invalidToken(token);
+            logger.info("登出成功, 该tokenIndex为：{}",tokenIndex);
+            return getResponseEntity(HttpStatus.OK, getSuccessResult("登出成功"));
+        }else {
+            return getResponseEntity(HttpStatus.BAD_REQUEST,getErrorResult(ResultCode.PARAM_IS_INVALID));
+        }
     }
 
     @GetMapping("/verify/uid/{uid}/key/{key}")
@@ -96,16 +113,16 @@ public class AuthController extends BaseController {
 
         String key = RedisKey.VERIFY_EMAIL_KEY + uid;
         String redisUUID = stringRedisTemplate.opsForValue().get(key);
-        if (StringUtils.isEmpty(redisUUID)){
+        if (StringUtils.isEmpty(redisUUID)) {
             return getResponseEntity(HttpStatus.OK, getErrorResult(ResultCode.DATA_EXPIRATION, "该链接已失效"));
         }
-        if (uuid.equalsIgnoreCase(redisUUID)){
+        if (uuid.equalsIgnoreCase(redisUUID)) {
             User user = userService.getUserById(uid);
             user.setEmailVerified(UserStatus.EMAIL_VERIFY.getStatus());
             stringRedisTemplate.delete(key);
             return getResponseEntity(HttpStatus.OK, getSuccessResult("邮箱验证成功!"));
-        }else {
-            return getResponseEntity(HttpStatus.OK,getErrorResult(ResultCode.DATA_IS_WRONG));
+        } else {
+            return getResponseEntity(HttpStatus.OK, getErrorResult(ResultCode.DATA_IS_WRONG));
         }
     }
 }
