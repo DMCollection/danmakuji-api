@@ -214,6 +214,8 @@ public class AdminEpisodeController extends BaseController {
                 editedEpisode.setReplyable(replyable);
             }
         }
+        editedEpisode.setUrl(episode.getUrl());
+        editedEpisode.setViewCount(episode.getViewCount());
         //更新episode
         editedEpisode = episodeService.updateEpisode(editedEpisode);
         if(null == editedEpisode){
