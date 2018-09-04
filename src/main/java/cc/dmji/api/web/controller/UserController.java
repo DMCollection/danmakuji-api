@@ -14,11 +14,13 @@ import cc.dmji.api.service.UserService;
 import cc.dmji.api.utils.DmjiUtils;
 import cc.dmji.api.utils.GeneralUtils;
 import cc.dmji.api.utils.JwtTokenUtils;
+import cc.dmji.api.web.listener.SysMessageEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.data.redis.core.BoundValueOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
@@ -30,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +59,9 @@ public class UserController extends BaseController {
 
     @Autowired
     private JwtTokenUtils jwtTokenUtils;
+
+    @Autowired
+    private ApplicationContext applicationContext;
 
     @Autowired
     private BCryptPasswordEncoder bCryptPasswordEncoder;
@@ -121,6 +127,13 @@ public class UserController extends BaseController {
 
             mailService.sendVerifyEmail(user1.getEmail(), user1.getUserId(), uuid);
 
+            applicationContext.publishEvent(
+                    new SysMessageEvent(this,
+                            Collections.singletonList(user1.getUserId()),
+                            "注册成功",
+                            "欢迎你成为darker的第<strong>"+user1.getUserId()+"</strong>名用户，请尽快完成邮箱的验证以及完善用户信息以获取更好的体验。" +
+                                    "deep♂dark♂fantasy~"
+                    ));
             return new ResponseEntity<Result>(
                     getSuccessResult(user1, "注册成功"),
                     HttpStatus.OK
