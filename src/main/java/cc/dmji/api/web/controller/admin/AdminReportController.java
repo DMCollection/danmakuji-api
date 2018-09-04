@@ -6,7 +6,6 @@ import cc.dmji.api.entity.Report;
 import cc.dmji.api.entity.v2.ReplyV2;
 import cc.dmji.api.enums.ReportHandleStatus;
 import cc.dmji.api.enums.ReportReason;
-import cc.dmji.api.enums.ReportTargetType;
 import cc.dmji.api.enums.Status;
 import cc.dmji.api.service.DanmakuService;
 import cc.dmji.api.service.ReportService;
@@ -25,10 +24,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/admin/reports")
@@ -59,24 +55,24 @@ public class AdminReportController extends BaseController {
             if (reportHandleStatus == null) {
                 return getErrorResult(ResultCode.PARAM_IS_INVALID, "type取值不合法");
             }
-            reports = reportService.listByHandleStatus(pn,ps,reportHandleStatus);
+            reports = reportService.listByHandleStatus(pn, ps, reportHandleStatus);
         }
         Map<String, Object> resultMap = new HashMap<>();
         resultMap.put("page", new PageInfo(pn, ps, reports.getTotalElements()));
 
-        List<Map<String,Object>> reportList = new ArrayList<>();
+        List<Map<String, Object>> reportList = new ArrayList<>();
         reports.getContent().forEach(report -> {
-            Map<String,Object> item = new HashMap<>();
-            item.put("handleStatus",report.getReportHandleStatus().getDescription());
-            item.put("handledTime",report.getHandledTime());
-            item.put("managerId",report.getManagerId());
-            item.put("reportReason",report.getReportReason().getDescription());
-            item.put("content",report.getReportContent());
-            item.put("createTime",report.getCreateTime());
-            item.put("targetType",report.getReportTargetType().getDescription());
-            item.put("publisherUserId",report.getPublisherUserId());
+            Map<String, Object> item = new HashMap<>();
+            item.put("handleStatus", report.getReportHandleStatus().getDescription());
+            item.put("handledTime", report.getHandledTime());
+            item.put("managerId", report.getManagerId());
+            item.put("reportReason", report.getReportReason().getDescription());
+            item.put("content", report.getReportContent());
+            item.put("createTime", report.getCreateTime());
+            item.put("targetType", report.getReportTargetType().getDescription());
+            item.put("publisherUserId", report.getPublisherUserId());
 //            item.put("targetUserId",report.getTargetUserId());
-            item.put("id",report.getId());
+            item.put("id", report.getId());
             reportList.add(item);
         });
         resultMap.put("reports", reportList);
@@ -130,9 +126,21 @@ public class AdminReportController extends BaseController {
             List<Long> uids = new ArrayList<>();
             reports.forEach(r -> uids.add(r.getPublisherUserId()));
             String title = "举报结果通知";
-            String content = "您举报的内容【" + DmjiUtils.formatReplyContent(report.getReportContent()) +
-                    "】因【" + report.getReportReason().getDescription() + "】已被删除。感谢您对darker社区秩序的维护，deep♂dark♂fantasy~";
+            String content = "您举报的" + report.getReportTargetType().getDescription() + "内容【" +
+                    DmjiUtils.formatReplyContent(report.getReportContent()) +
+                    "】因【" + report.getReportReason().getDescription() +
+                    "】已被删除。感谢您对darker社区秩序的维护，deep♂dark♂fantasy~";
             applicationContext.publishEvent(new SysMessageEvent(this, uids, title, content));
+
+            String c = "尊敬的用户您好，由于您的" + report.getReportTargetType().getDescription() + "【" +
+                    DmjiUtils.formatReplyContent(report.getReportContent()) +
+                    "】因【" + report.getReportReason().getDescription() + "】被多次举报已被删除。请遵守相关法律法规，珍惜发言机会，共同营造一个良好的讨论环境。" +
+                    "若有疑问请联系help@darker.online，感谢您的支持。";
+            applicationContext.publishEvent(new SysMessageEvent(
+                    this,
+                    Collections.singletonList(report.getPublisherUserId()),
+                    report.getReportTargetType().getDescription() + "删除通知", c));
+
         }
         reports.forEach(report1 -> {
             report1.setReportHandleStatus(report.getReportHandleStatus().getCode());
@@ -144,19 +152,19 @@ public class AdminReportController extends BaseController {
     }
 
     @Async
-    public void deleteTarget(Report report){
-        switch (report.getReportTargetType()){
-            case DANMAKU:{
+    public void deleteTarget(Report report) {
+        switch (report.getReportTargetType()) {
+            case DANMAKU: {
                 danmakuService.deleteById(report.getReportTargetId());
                 break;
             }
-            case REPLY:{
+            case REPLY: {
                 ReplyV2 replyV2 = replyV2Service.getById(report.getReportTargetId());
                 replyV2.setStatus(Status.DELETE);
                 replyV2Service.update(replyV2);
                 break;
             }
-            default:{
+            default: {
                 break;
             }
         }
