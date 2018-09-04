@@ -1,5 +1,6 @@
 package cc.dmji.api.web.controller;
 
+import cc.dmji.api.annotation.RequestLimit;
 import cc.dmji.api.annotation.UserLog;
 import cc.dmji.api.common.Result;
 import cc.dmji.api.common.ResultCode;
@@ -66,6 +67,7 @@ public class UserController extends BaseController {
      */
     @PostMapping
     @UserLog("账号注册")
+    @RequestLimit(value = "请不要疯狂注册",timeout = "60")
     public ResponseEntity<Result> registerUser(@RequestBody User user) throws MessagingException {
         String nick = user.getNick();
         String password = user.getPwd();
