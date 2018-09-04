@@ -152,9 +152,8 @@ public class UserController extends BaseController {
     @UserLog("获取单个用户信息")
     public ResponseEntity getUser(@PathVariable Long userId, HttpServletRequest request) {
         User user = userService.getUserById(userId);
-        Long currentUserId = getUidFromRequest(request);
-
         if (user != null) {
+            Long currentUserId = getUidFromRequest(request);
             // 如果不是本人的话只能获取一些奇怪的东西了
             if (currentUserId == null || !currentUserId.equals(user.getUserId())) {
 //                UserInfo userInfo = new UserInfo();
@@ -173,7 +172,28 @@ public class UserController extends BaseController {
             user.setPwd("");
             return getResponseEntity(HttpStatus.OK, getSuccessResult(user));
         }
-        return getResponseEntity(HttpStatus.BAD_REQUEST, getErrorResult(ResultCode.RESULT_DATA_NOT_FOUND));
+        return getResponseEntity(HttpStatus.OK, getErrorResult(ResultCode.RESULT_DATA_NOT_FOUND));
+    }
+
+    @GetMapping("/name/{username}")
+    public Result getUserInfo(@PathVariable("username") String username, HttpServletRequest request){
+        User user = userService.getUserByNick(username);
+        if (user != null) {
+            Long currentUserId = getUidFromRequest(request);
+            // 如果不是本人的话只能获取一些奇怪的东西了
+            if (currentUserId == null || !currentUserId.equals(user.getUserId())) {
+                Map<String, String> userInfo = new HashMap<>();
+                userInfo.put("sex", user.getSex());
+                userInfo.put("face", user.getFace());
+                userInfo.put("uid", String.valueOf(user.getUserId()));
+                userInfo.put("nick", user.getNick());
+                userInfo.put("sign", user.getSign());
+                return getSuccessResult(userInfo);
+            }
+            user.setPwd("");
+            return getSuccessResult(user);
+        }
+        return getErrorResult(ResultCode.RESULT_DATA_NOT_FOUND);
     }
 
     //    @DeleteMapping("/{userId}")
