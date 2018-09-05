@@ -126,7 +126,7 @@ public class AdminReportController extends BaseController {
             List<Long> uids = new ArrayList<>();
             reports.forEach(r -> uids.add(r.getPublisherUserId()));
             String title = "举报结果通知";
-            String content = "您举报的" + report.getReportTargetType().getDescription() + "内容【" +
+            String content = "您举报的" + report.getReportTargetType().getDescription() + "【" +
                     DmjiUtils.formatReplyContent(report.getReportContent()) +
                     "】因【" + report.getReportReason().getDescription() +
                     "】已被删除。感谢您对darker社区秩序的维护，deep♂dark♂fantasy~";
@@ -138,7 +138,7 @@ public class AdminReportController extends BaseController {
                     "若有疑问请联系help@darker.online，感谢您的支持。";
             applicationContext.publishEvent(new SysMessageEvent(
                     this,
-                    Collections.singletonList(report.getPublisherUserId()),
+                    Collections.singletonList(report.getTargetUserId()),
                     report.getReportTargetType().getDescription() + "删除通知", c));
 
         }
