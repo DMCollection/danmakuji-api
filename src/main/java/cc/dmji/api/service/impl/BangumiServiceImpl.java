@@ -11,7 +11,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.sql.Timestamp;
 import java.util.List;
@@ -61,7 +60,7 @@ public class BangumiServiceImpl implements BangumiService {
 
     @Override
     public List<Bangumi> listBangumisAmbiguous(String name) {
-        throw new NotImplementedException();
+        return null;
     }
 
     @Override

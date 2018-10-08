@@ -16,7 +16,7 @@ import javax.mail.internet.MimeMessage;
 /**
  * Created by echisan on 2018/5/20
  */
-@Service
+//@Service
 public class MailServiceImpl implements MailService {
     private static final Logger logger = LoggerFactory.getLogger(MailServiceImpl.class);
 

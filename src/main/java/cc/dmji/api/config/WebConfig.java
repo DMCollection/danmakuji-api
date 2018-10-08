@@ -2,6 +2,8 @@ package cc.dmji.api.config;
 
 import cc.dmji.api.web.interceptor.RequestLimitInterceptor;
 import cc.dmji.api.web.filter.OnlineUserFilter;
+import com.sendgrid.SendGrid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,6 +39,11 @@ public class WebConfig implements WebMvcConfigurer {
     @Bean
     public RequestLimitInterceptor requestLimitInterceptor(){
         return new RequestLimitInterceptor();
+    }
+
+    @Bean
+    public SendGrid sendGrid(@Value("${sendgrid.api.key}")String apiKey){
+        return new SendGrid(apiKey);
     }
 }
 
