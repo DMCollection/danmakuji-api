@@ -11,7 +11,7 @@ services:
     volumes:
     - ./mysql:/var/lib/mysql
     environment:
-    - MYSQL_ROOT_PASSWORD=dkONLINE1
+    - MYSQL_ROOT_PASSWORD=PASSWORDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
     - MYSQL_DATABASE=dmji
     - TZ=Asia/Shanghai
     restart: always
